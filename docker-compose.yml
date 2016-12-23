@@ -1,0 +1,70 @@
+version: '2'
+services:
+  rabbit:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+  mongo:
+    image: mongo:3
+  elasticsearch:
+    image: "elasticsearch:2"
+    command: "elasticsearch -Des.cluster.name='graylog'"
+  graylog:
+    image: graylog2/server
+    ports:
+      - "9000:9000"
+    environment:
+      - GRAYLOG_WEB_ENDPOINT_URI
+    depends_on:
+      - mongo
+      - elasticsearch
+  configserver:
+    image: richardcsantana/configserver
+    ports:
+      - "8888:8080"
+    depends_on:
+      - graylog
+      - rabbit
+    environment:
+      - SPRING_CLOUD_CONFIG_LABEL
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+    command: ["java -jar", "app.jar"]
+  discovery1:
+    image: richardcsantana/discovery
+    ports:
+      - "8761:8080"
+    depends_on:
+      - configserver
+    environment:
+      - SPRING_CLOUD_CONFIG_LABEL
+      - CONFIG_SERVER_URL
+    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "30", "--", "java", "-jar", "app.jar"]
+  discovery2:
+    image: richardcsantana/discovery
+    ports:
+      - "8762:8080"
+    depends_on:
+      - configserver
+    environment:
+      - SPRING_CLOUD_CONFIG_LABEL
+      - CONFIG_SERVER_URL
+    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "30", "--", "java", "-jar", "app.jar"]
+  gateway:
+    image: richardcsantana/gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - configserver
+      - discovery1
+      - discovery2
+    environment:
+      - SPRING_CLOUD_CONFIG_LABEL
+      - CONFIG_SERVER_URL
+    command: ["./wait-for-it.sh", "discovery1:8080", "-s", "-t", "50", "--", "java", "-jar", "app.jar"]
+  hello:
+    image: richardcsantana/hello-cloud
+    depends_on:
+      - gateway
+    environment:
+      - SPRING_CLOUD_CONFIG_LABEL
+      - CONFIG_SERVER_URL
