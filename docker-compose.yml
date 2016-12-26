@@ -28,7 +28,7 @@ services:
     environment:
       - SPRING_CLOUD_CONFIG_LABEL
       - SPRING_CLOUD_CONFIG_SERVER_GIT_URI
-    command: ["java -jar", "app.jar"]
+    command: ["java", "-jar", "app.jar"]
   discovery1:
     image: richardcsantana/discovery
     ports:
@@ -38,7 +38,7 @@ services:
     environment:
       - SPRING_CLOUD_CONFIG_LABEL
       - CONFIG_SERVER_URL
-    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "30", "--", "java", "-jar", "app.jar"]
+    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "45", "--", "java", "-jar", "app.jar"]
   discovery2:
     image: richardcsantana/discovery
     ports:
@@ -48,7 +48,7 @@ services:
     environment:
       - SPRING_CLOUD_CONFIG_LABEL
       - CONFIG_SERVER_URL
-    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "30", "--", "java", "-jar", "app.jar"]
+    command: ["./wait-for-it.sh", "configserver:8080", "-s", "-t", "45", "--", "java", "-jar", "app.jar"]
   gateway:
     image: richardcsantana/gateway
     ports:
@@ -68,3 +68,4 @@ services:
     environment:
       - SPRING_CLOUD_CONFIG_LABEL
       - CONFIG_SERVER_URL
+    command: ["./wait-for-it.sh", "discovery1:8080", "-s", "-t", "50", "--", "java", "-jar", "app.jar"]
